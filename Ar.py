@@ -49,7 +49,9 @@ class Ar:
 			for m,n in matches:
 				if m.distance < 0.75 * n.distance:
 					good.append(m)
-			print(len(good))
+			print(len(good)) # print out how many keyPoints are matches
+			imgFeatures = cv2.drawMatches(self.imgTarget, kp1, imgCap, kp2, good,None, flags=2 )
+			cv2.imshow("ImgFeatures", imgFeatures )
 
 
 			# show our taking imges of video
