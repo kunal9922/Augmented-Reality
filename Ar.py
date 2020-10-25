@@ -28,10 +28,30 @@ class Ar:
 		hT, wT, cT = self.imgTarget.shape
 		imgVideo = cv2.resize(imgVideo, (wT,hT))
 
+		# main detector for finding features of target image in mainFrame video
+		orb = cv2.ORB_create(nfeatures=1000) # image matching  detector
+		kp1, des1 = orb.detectAndCompute(self.imgTarget, None)
+		self.imgTarget = cv2.drawKeypoints(self.imgTarget, kp1, None)
+
 		# for showing video use loop to capture frames
 		while True:
 			sucesss, imgCap = self.cap.read()
-			imgCap = cv2.resize(imgCap, (wT, hT))
+			imgCap = cv2.resize(imgCap, (wT+200, hT+200))
+
+			# testing this algorithm on our MainVideo frame for working properly or not
+			kp2, des2 = orb.detectAndCompute(imgCap, None)
+			#imgCap = cv2.drawKeypoints(imgCap, kp2, None)
+
+			# create brute fore matcher algorithm for matching keyPoints using descriptor
+			bf = cv2.BFMatcher()
+			matches = bf.knnMatch(des1, des2, k=2)
+			good = []
+			for m,n in matches:
+				if m.distance < 0.75 * n.distance:
+					good.append(m)
+			print(len(good))
+
+
 			# show our taking imges of video
 			cv2.imshow("Main Frame", imgCap)
 			cv2.imshow("ImgTarget", self.imgTarget)
