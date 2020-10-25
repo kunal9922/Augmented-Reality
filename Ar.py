@@ -18,7 +18,7 @@ class Ar:
 		self.myVid = cv2.VideoCapture(input["putVideo"])  # putting video on target image
 		self.imgTarget = cv2.imread(input["targetImagePath"])  # target place where video will be put
 
-		self.imgTarget = cv2.resize(self.imgTarget, (420,420))
+		#self.imgTarget = cv2.resize(self.imgTarget, (420,420))
 		# test our taking input is properly import in program
 		sucesss, imgVideo = self.myVid.read()
 
@@ -62,4 +62,4 @@ class Ar:
 
 
 if __name__=='__main__':
-	AR1 = Ar(capturePath=r"DataSet//MainVideo.mp4",putVideo=r"DataSet//putVideo.mp4", targetImagePath=r"DataSet//mount.jpg")
+	AR1 = Ar(capturePath=r"DataSet//MainVideo.mp4",putVideo=r"DataSet//putVideo1.mp4", targetImagePath=r"DataSet//targetImg.png")
