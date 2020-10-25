@@ -17,3 +17,7 @@ class Ar:
 		self.cap = cv2.VideoCapture(input["capturePath"])
 		self.myVid = cv2.VideoCapture(input["putVideo"])  # putting video on target image
 		self.imgTarget = cv2.imread(input["targetImagePath"])  # target place where video will be put
+
+
+if __name__=='__main__':
+	AR1 = Ar(capturePath=r"DataSet//MainVideo.mp4",putVideo=r"DataSet//putVideo.mp4", targetImagePath=r"DataSet//mount.jpg")
