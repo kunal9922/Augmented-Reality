@@ -19,6 +19,50 @@ class Ar:
 		self.myVid = cv2.VideoCapture(capture["putVideo"])  # putting video on target image
 		self.imgTarget = cv2.imread(capture["targetImagePath"])  # target place where video will be put
 
+	## TO STACK ALL THE IMAGES IN ONE WINDOW
+	def StackImages(self,imgArray, scale, lables=[]):
+		rows = len(imgArray)
+		cols = len(imgArray[0])
+		rowsAvailable = isinstance(imgArray[0], list)
+		width = imgArray[0][0].shape[1]
+		height = imgArray[0][0].shape[0]
+
+		if rowsAvailable:
+			for x in range(0, rows):
+				for y in range(0, cols):
+					imgArray[x][y] = cv2.resize(imgArray[x][y], (width, height), None, scale, scale)
+					if len(imgArray[x][y].shape) == 2:
+						imgArray[x][y] = cv2.cvtColor(imgArray[x][y], cv2.COLOR_GRAY2BGR)
+			imageBlank = np.zeros((height, width, 3), np.uint8)
+			hor = [imageBlank] * rows
+			hor_con = [imageBlank] * rows
+			for x in range(0, rows):
+				hor[x] = np.hstack(imgArray[x])
+				hor_con[x] = np.concatenate(imgArray[x])
+			ver = np.vstack(hor)
+			ver_con = np.concatenate(hor)
+		else:
+			for x in range(0, rows):
+				imgArray[x] = cv2.resize(imgArray[x], (width, height), None, scale, scale)
+				if len(imgArray[x].shape) == 2:
+					imgArray[x] = cv2.cvtColor(imgArray[x], cv2.COLOR_GRAY2BGR)
+			print(imgArray.shape)
+			hor = np.hstack(imgArray)
+			hor_con = np.concatenate(imgArray)
+			ver = hor
+		if len(lables) != 0:
+			eachImgWidth = int(ver.shape[1] / cols)
+			eachImgHeight = int(ver.shape[0] / rows)
+			print(eachImgHeight)
+			for d in range(0, rows):
+				for c in range(0, cols):
+					cv2.rectangle(ver, (c * eachImgWidth, eachImgHeight * d),
+					              (c * eachImgWidth + len(lables[d]) * 13 + 27, 30 + eachImgHeight * d),
+					              (255, 255, 255), cv2.FILLED)
+					cv2.putText(ver, lables[d], (eachImgWidth * c + 10, eachImgHeight * d + 20),
+					            cv2.FONT_HERSHEY_COMPLEX, 0.7, (255, 0, 255), 2)
+		return ver
+
 	def computeAr(self):
 		'''to show and computation of Augmented Reality  '''
 
@@ -30,7 +74,8 @@ class Ar:
 		'''Resize of video which we want to put on target image because 
 			its consistent overlay on traget if both frames have same size'''
 		hT, wT, cT = self.imgTarget.shape
-		imgVideo = cv2.resize(imgVideo, (wT,hT))
+		imgVideo = cv2.resize(imgVideo, (wT, hT))
+		imgTarget = cv2.resize(self.imgTarget, (wT, hT))
 
 		# main detector for finding features of target image in mainFrame video
 		orb = cv2.ORB_create(nfeatures=1000) # image matching  detector
@@ -43,6 +88,7 @@ class Ar:
 			imgAugment = imgCap.copy()
 			# declaration of final outPut image which will be augumented
 			imgCap = cv2.resize(imgCap, (wT+200, hT+200))
+
 			imgAugment = imgCap.copy()
 			# testing this algorithm on our MainVideo frame for working properly or not
 			kp2, des2 = orb.detectAndCompute(imgCap, None)
@@ -60,7 +106,7 @@ class Ar:
 
 			# draw good matches on images
 			imgFeatures = cv2.drawMatches(self.imgTarget, kp1, imgCap, kp2, good,None, flags=2 )
-			cv2.imshow("ImgFeatures", imgFeatures)
+			imgFeatures = cv2.resize(imgFeatures, (wT+200, hT+200))
 
 			#  if features are greater than 20 so we can call that we find out target images on Main Frame
 			if len(good) > 20:
@@ -94,15 +140,21 @@ class Ar:
 				# we overlay warpImage[putVideo] on mainFrame
 				imgAugment = cv2.bitwise_or(imgWrap, imgAugment)
 
+				# using my manually created image stacking function for showing images in a proper format
+				imgList = ([imgVideo, imgTarget, imgCap], [imgFeatures,imgWrap, imgAugment])
+				imgStack = self.StackImages(imgList, scale=0.5)
 			# show our taking imges of video
+
 			cv2.imshow("Main Frame", imgCap)
 			cv2.imshow("ImgTarget", self.imgTarget)
 			cv2.imshow("ImgVideo", imgVideo)
+			cv2.imshow("image Features", imgFeatures)
 			cv2.imshow("Poly Line image", img2WithPoly)
 			cv2.imshow("Image Wraper", imgWrap)
 			cv2.imshow("Image Masking", maskNew)
 			cv2.imshow("Image Masking inverse", maskInv)
 			cv2.imshow("image Augument", imgAugment)
+			cv2.imshow("ImageStacked", imgStack)
 			cv2.waitKey(0)
 
 
