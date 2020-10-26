@@ -2,23 +2,26 @@ import cv2
 import numpy as np
 
 class Ar:
+
 	'''Augmented Reality using openCv called computer vision
 	capturePath = 0 primaryCamera, capturePath=1 secondayCamera, capturePath="dir//fileName.mp4 '''
 
-	def __init__(self, **input):
-		self.input = input
-		if "frameHeight" in input.keys() and "frameWidth" in input.keys():
-			self.frameHeight = input["frameHeight"]
-			self.frameWidth = input["frameWidth"]
+	def __init__(self, **capture):
+		self.input = capture
+		if "frameHeight" in capture.keys() and "frameWidth" in capture.keys():
+			self.frameHeight = capture["frameHeight"]
+			self.frameWidth = capture["frameWidth"]
 		else:  # other wise  default
 			self.frameHeight = 360
 			self.frameWidth = 360
 
-		self.cap = cv2.VideoCapture(input["capturePath"])
-		self.myVid = cv2.VideoCapture(input["putVideo"])  # putting video on target image
-		self.imgTarget = cv2.imread(input["targetImagePath"])  # target place where video will be put
+		self.cap = cv2.VideoCapture(capture["capturePath"])
+		self.myVid = cv2.VideoCapture(capture["putVideo"])  # putting video on target image
+		self.imgTarget = cv2.imread(capture["targetImagePath"])  # target place where video will be put
 
-		#self.imgTarget = cv2.resize(self.imgTarget, (420,420))
+	def computeAr(self):
+		'''to show and computation of Augmented Reality  '''
+
 		# test our taking input is properly import in program
 		sucesss, imgVideo = self.myVid.read()
 
@@ -61,5 +64,6 @@ class Ar:
 			cv2.waitKey(0)
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
 	AR1 = Ar(capturePath=r"DataSet//MainVideo.mp4",putVideo=r"DataSet//putVideo1.mp4", targetImagePath=r"DataSet//targetImg.png")
+	AR1.computeAr()
