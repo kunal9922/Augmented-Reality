@@ -39,9 +39,10 @@ class Ar:
 		# for showing video use loop to capture frames
 		while True:
 			sucesss, imgCap = self.cap.read()
+			imgAugment = imgCap.copy()
 			# declaration of final outPut image which will be augumented
 			imgCap = cv2.resize(imgCap, (wT+200, hT+200))
-
+			imgAugment = imgCap.copy()
 			# testing this algorithm on our MainVideo frame for working properly or not
 			kp2, des2 = orb.detectAndCompute(imgCap, None)
 			#imgCap = cv2.drawKeypoints(imgCap, kp2, None)
@@ -80,12 +81,24 @@ class Ar:
 				# find out the warp perspective of an  image
 				imgWrap = cv2.warpPerspective(imgVideo, matrix, (imgCap.shape[1], imgCap.shape[0]))
 
+				#Masking of mainFrame image for putting proper video that help
+				maskNew = np.zeros([imgCap.shape[0], imgCap.shape[1]], dtype=np.uint8)
+				# now we have to color area where we find image as white actually this will mask
+				cv2.fillPoly(maskNew, [np.int32(dst)], (255, 255, 255))
+
+				# now we inverse image for get color region of mainFrame image
+				maskInv = cv2.bitwise_not(maskNew)
+				imgAugment = cv2.bitwise_and(src1=imgAugment,src2= imgAugment, mask=maskInv)
+
 			# show our taking imges of video
 			cv2.imshow("Main Frame", imgCap)
 			cv2.imshow("ImgTarget", self.imgTarget)
 			cv2.imshow("ImgVideo", imgVideo)
 			cv2.imshow("Poly Line image", img2WithPoly)
 			cv2.imshow("Image Wraper", imgWrap)
+			cv2.imshow("Image Masking", maskNew)
+			cv2.imshow("Image Masking inverse", maskInv)
+			cv2.imshow("image Augument", imgAugment)
 			cv2.waitKey(0)
 
 
