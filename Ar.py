@@ -39,6 +39,7 @@ class Ar:
 		# for showing video use loop to capture frames
 		while True:
 			sucesss, imgCap = self.cap.read()
+			# declaration of final outPut image which will be augumented
 			imgCap = cv2.resize(imgCap, (wT+200, hT+200))
 
 			# testing this algorithm on our MainVideo frame for working properly or not
@@ -49,18 +50,38 @@ class Ar:
 			bf = cv2.BFMatcher()
 			matches = bf.knnMatch(des1, des2, k=2)
 			good = []
-			for m,n in matches:
+			for m, n in matches:
+
 				if m.distance < 0.75 * n.distance:
 					good.append(m)
-			print(len(good)) # print out how many keyPoints are matches
-			imgFeatures = cv2.drawMatches(self.imgTarget, kp1, imgCap, kp2, good,None, flags=2 )
-			cv2.imshow("ImgFeatures", imgFeatures )
+			print(len(good))  # print out how many keyPoints are matches
 
+			# draw good matches on images
+			imgFeatures = cv2.drawMatches(self.imgTarget, kp1, imgCap, kp2, good,None, flags=2 )
+			cv2.imshow("ImgFeatures", imgFeatures)
+
+			#  if features are greater than 20 so we can call that we find out target images on Main Frame
+			if len(good) > 20:
+				print("This is our good feature matches", good)
+				# m.query is the target image
+				srcPts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)  # looping and find out the good matches
+				dstPts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)  # looping and find out the good matches
+
+				matrix, mask = cv2.findHomography(srcPts, dstPts, cv2.RANSAC, 5)
+				print(matrix)
+
+				# FIND OUT bounding box using perspective transform and Poly lines to draw lines
+				pts = np.float32([[0, 0], [0, hT], [wT, hT], [wT, 0]]).reshape(-1, 1, 2)
+				dst = cv2.perspectiveTransform(pts, matrix)
+
+				# draw poly lines on main frame image
+				img2WithPoly = cv2.polylines(imgCap, [np.int32(dst)], True, (255,0,255), 2)
 
 			# show our taking imges of video
 			cv2.imshow("Main Frame", imgCap)
 			cv2.imshow("ImgTarget", self.imgTarget)
 			cv2.imshow("ImgVideo", imgVideo)
+			cv2.imshow("Poly Line image", img2WithPoly)
 			cv2.waitKey(0)
 
 
