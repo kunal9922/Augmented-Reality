@@ -18,6 +18,7 @@ class Ar:
 		self.cap = cv2.VideoCapture(capture["capturePath"])
 		self.myVid = cv2.VideoCapture(capture["putVideo"])  # putting video on target image
 		self.imgTarget = cv2.imread(capture["targetImagePath"])  # target place where video will be put
+		self.detection = False
 
 	## TO STACK ALL THE IMAGES IN ONE WINDOW
 	def StackImages(self,imgArray, scale, lables=[]):
@@ -70,6 +71,9 @@ class Ar:
 		global img2WithPoly
 		sucesss, imgVideo = self.myVid.read()
 
+		# frame counter for counting frame rates
+		frameCount = 0
+
 		# fetch the height and width of target image and putVideo so that overlay of putVideo on target properly
 		'''Resize of video which we want to put on target image because 
 			its consistent overlay on traget if both frames have same size'''
@@ -89,6 +93,23 @@ class Ar:
 			# declaration of final outPut image which will be augumented
 			imgCap = cv2.resize(imgCap, (wT+200, hT+200))
 
+			if self.detection == False:
+				# we not detect anything
+				#so initialize video to 0
+				self.myVid.set(cv2.CAP_PROP_POS_FRAMES, 0)
+				frameCount = 0
+
+			else:
+				# if myVideo which will play on base that will end so that will replay
+				if frameCount == self.myVid.get(cv2.CAP_PROP_FRAME_COUNT):  # check the myVideo total frame is eql to frame count so that loop it again
+					# so initialize video to 0
+					self.myVid.set(cv2.CAP_PROP_POS_FRAMES, 0)
+					frameCount = 0 # say that this will again to zero or restart
+
+				sucesss, imgVideo = self.myVid.read()
+				imgVideo = cv2.resize(imgVideo, (wT, hT))
+				imgTarget = cv2.resize(self.imgTarget, (wT, hT))
+
 			imgAugment = imgCap.copy()
 			# testing this algorithm on our MainVideo frame for working properly or not
 			kp2, des2 = orb.detectAndCompute(imgCap, None)
@@ -102,7 +123,7 @@ class Ar:
 
 				if m.distance < 0.75 * n.distance:
 					good.append(m)
-			print(len(good))  # print out how many keyPoints are matches
+			print("key points are find out ",len(good))  # print out how many keyPoints are matches
 
 			# draw good matches on images
 			imgFeatures = cv2.drawMatches(self.imgTarget, kp1, imgCap, kp2, good,None, flags=2 )
@@ -110,13 +131,13 @@ class Ar:
 
 			#  if features are greater than 20 so we can call that we find out target images on Main Frame
 			if len(good) > 20:
-				print("This is our good feature matches", good)
+				self.detection = True  # say to target image is find out
+				print("This is our good feature matches = ", len(good))
 				# m.query is the target image
 				srcPts = np.float32([kp1[m.queryIdx].pt for m in good]).reshape(-1, 1, 2)  # looping and find out the good matches
 				dstPts = np.float32([kp2[m.trainIdx].pt for m in good]).reshape(-1, 1, 2)  # looping and find out the good matches
 
 				matrix, mask = cv2.findHomography(srcPts, dstPts, cv2.RANSAC, 5)
-				print(matrix)
 
 				# FIND OUT bounding box using perspective transform and Poly lines to draw lines
 				pts = np.float32([[0, 0], [0, hT], [wT, hT], [wT, 0]]).reshape(-1, 1, 2)
@@ -145,19 +166,21 @@ class Ar:
 				imgStack = self.StackImages(imgList, scale=0.5)
 			# show our taking imges of video
 
-			cv2.imshow("Main Frame", imgCap)
+			'''cv2.imshow("Main Frame", imgCap)
 			cv2.imshow("ImgTarget", self.imgTarget)
 			cv2.imshow("ImgVideo", imgVideo)
-			cv2.imshow("image Features", imgFeatures)
+			cv2.imshow("image Features", imgFeatures)   # if you want to show complete pipeline of program just uncomment  triple quotes
 			cv2.imshow("Poly Line image", img2WithPoly)
 			cv2.imshow("Image Wraper", imgWrap)
 			cv2.imshow("Image Masking", maskNew)
 			cv2.imshow("Image Masking inverse", maskInv)
-			cv2.imshow("image Augument", imgAugment)
+			cv2.imshow("image Augument", imgAugment) '''
+
+			# main output
 			cv2.imshow("ImageStacked", imgStack)
 			cv2.waitKey(1)
-
+			frameCount += 1
 
 if __name__ == '__main__':
-	AR1 = Ar(capturePath=r"DataSet//MainVideo.mp4",putVideo=r"DataSet//putVideo1.mp4", targetImagePath=r"DataSet//targetImg.png")
+	AR1 = Ar(capturePath=r"DataSet//MainVideo.mp4", putVideo=r"DataSet//putVideo1.mp4", targetImagePath=r"DataSet//targetImg.png")
 	AR1.computeAr()
