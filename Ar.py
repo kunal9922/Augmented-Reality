@@ -77,11 +77,15 @@ class Ar:
 				# draw poly lines on main frame image
 				img2WithPoly = cv2.polylines(imgCap, [np.int32(dst)], True, (255,0,255), 2)
 
+				# find out the warp perspective of an  image
+				imgWrap = cv2.warpPerspective(imgVideo, matrix, (imgCap.shape[1], imgCap.shape[0]))
+
 			# show our taking imges of video
 			cv2.imshow("Main Frame", imgCap)
 			cv2.imshow("ImgTarget", self.imgTarget)
 			cv2.imshow("ImgVideo", imgVideo)
 			cv2.imshow("Poly Line image", img2WithPoly)
+			cv2.imshow("Image Wraper", imgWrap)
 			cv2.waitKey(0)
 
 
