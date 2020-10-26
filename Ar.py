@@ -23,6 +23,7 @@ class Ar:
 		'''to show and computation of Augmented Reality  '''
 
 		# test our taking input is properly import in program
+		global img2WithPoly
 		sucesss, imgVideo = self.myVid.read()
 
 		# fetch the height and width of target image and putVideo so that overlay of putVideo on target properly
@@ -81,14 +82,17 @@ class Ar:
 				# find out the warp perspective of an  image
 				imgWrap = cv2.warpPerspective(imgVideo, matrix, (imgCap.shape[1], imgCap.shape[0]))
 
-				#Masking of mainFrame image for putting proper video that help
+				# Masking of mainFrame image for putting proper video that help
 				maskNew = np.zeros([imgCap.shape[0], imgCap.shape[1]], dtype=np.uint8)
 				# now we have to color area where we find image as white actually this will mask
 				cv2.fillPoly(maskNew, [np.int32(dst)], (255, 255, 255))
 
 				# now we inverse image for get color region of mainFrame image
 				maskInv = cv2.bitwise_not(maskNew)
-				imgAugment = cv2.bitwise_and(src1=imgAugment,src2= imgAugment, mask=maskInv)
+				imgAugment = cv2.bitwise_and(src1=imgAugment, src2=imgAugment, mask=maskInv)
+
+				# we overlay warpImage[putVideo] on mainFrame
+				imgAugment = cv2.bitwise_or(imgWrap, imgAugment)
 
 			# show our taking imges of video
 			cv2.imshow("Main Frame", imgCap)
