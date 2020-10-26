@@ -155,7 +155,7 @@ class Ar:
 			cv2.imshow("Image Masking inverse", maskInv)
 			cv2.imshow("image Augument", imgAugment)
 			cv2.imshow("ImageStacked", imgStack)
-			cv2.waitKey(0)
+			cv2.waitKey(1)
 
 
 if __name__ == '__main__':
