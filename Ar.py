@@ -91,7 +91,7 @@ class Ar:
 			sucesss, imgCap = self.cap.read()
 			imgAugment = imgCap.copy()
 			# declaration of final outPut image which will be augumented
-			imgCap = cv2.resize(imgCap, (self.frameWidth, self.frameHeight))
+			imgCap = cv2.resize(imgCap, (wT+200, hT+200))
 
 			if self.detection == False:
 				# we not detect anything
@@ -178,8 +178,11 @@ class Ar:
 
 			# main output
 			cv2.imshow("ImageStacked", imgStack)
-			cv2.waitKey(1)
 			frameCount += 1
+
+			if cv2.waitKey(1) & 0xFF == ord("q"):  # for quit the session Press 'q'
+				break
+
 
 if __name__ == '__main__':
 	AR1 = Ar(capturePath=r"DataSet//MainVideo.mp4", putVideo=r"DataSet//putVideo1.mp4", targetImagePath=r"DataSet//targetImg.png")
