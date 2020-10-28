@@ -34,7 +34,9 @@ Augmented Reality using [HomoGrapy](https://en.wikipedia.org/wiki/Homography_(co
 
 ### Target Image
 
-![](E:\Augmented-Reality\DataSet\targetImg.png)
+![ <img src="DataSet\targetImg.png" alt="forest" style="width : 500px;" />)
 
 ### Final Pipe Line of Program
+
+<img src="DataSet\pipelineCode.gif" />
 
