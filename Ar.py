@@ -12,8 +12,8 @@ class Ar:
 			self.frameHeight = capture["frameHeight"]
 			self.frameWidth = capture["frameWidth"]
 		else:  # other wise  default
-			self.frameHeight = 360
-			self.frameWidth = 360
+			self.frameHeight = 780
+			self.frameWidth = 780
 
 		self.cap = cv2.VideoCapture(capture["capturePath"])
 		self.myVid = cv2.VideoCapture(capture["putVideo"])  # putting video on target image
@@ -87,11 +87,11 @@ class Ar:
 		self.imgTarget = cv2.drawKeypoints(self.imgTarget, kp1, None)
 
 		# for showing video use loop to capture frames
-		while True:
+		while self.cap.isOpened():
 			sucesss, imgCap = self.cap.read()
 			imgAugment = imgCap.copy()
 			# declaration of final outPut image which will be augumented
-			imgCap = cv2.resize(imgCap, (wT+200, hT+200))
+			imgCap = cv2.resize(imgCap, (self.frameWidth, self.frameHeight))
 
 			if self.detection == False:
 				# we not detect anything
