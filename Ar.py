@@ -82,7 +82,7 @@ class Ar:
 		imgTarget = cv2.resize(self.imgTarget, (wT, hT))
 
 		# main detector for finding features of target image in mainFrame video
-		orb = cv2.ORB_create(nfeatures=1000) # image matching  detector
+		orb = cv2.ORB_create(nfeatures=2000) # image matching  detector
 		kp1, des1 = orb.detectAndCompute(self.imgTarget, None)
 		self.imgTarget = cv2.drawKeypoints(self.imgTarget, kp1, None)
 
@@ -185,5 +185,5 @@ class Ar:
 
 
 if __name__ == '__main__':
-	AR1 = Ar(capturePath=r"DataSet//MainVideo.mp4", putVideo=r"DataSet//putVideo1.mp4", targetImagePath=r"DataSet//targetImg.png")
+	AR1 = Ar(capturePath=r"DataSet//MainVideo.mp4", putVideo=r"DataSet//PexelsVideos.mp4", targetImagePath=r"DataSet//targetImg.png")
 	AR1.computeAr()
