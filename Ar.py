@@ -3,10 +3,10 @@ import numpy as np
 
 class Ar:
 
-	'''Augmented Reality using openCv called computer vision
-	capturePath = 0 primaryCamera, capturePath=1 secondayCamera, capturePath="dir//fileName.mp4 '''
+	'''Augmented Reality using openCv to overlay the video on the object'''
 
 	def __init__(self, **capture):
+		'''capturePath = 0 primaryCamera, capturePath=1 secondayCamera, capturePath="dir//fileName.mp4 '''
 		self.input = capture
 		if "frameHeight" in capture.keys() and "frameWidth" in capture.keys():
 			self.frameHeight = capture["frameHeight"]
@@ -18,10 +18,24 @@ class Ar:
 		self.cap = cv2.VideoCapture(capture["capturePath"])
 		self.myVid = cv2.VideoCapture(capture["putVideo"])  # putting video on target image
 		self.imgTarget = cv2.imread(capture["targetImagePath"])  # target place where video will be put
+		self.imgTarget = cv2.resize(self.imgTarget, (375, 381))
 		self.detection = False
 
 	## TO STACK ALL THE IMAGES IN ONE WINDOW
 	def StackImages(self,imgArray, scale, lables=[]):
+		"""
+		The function `StackImages` takes in an array of images, scales them, and stacks them horizontally
+		or vertically depending on the shape of the array, and returns the stacked image.
+		
+		:param imgArray: The `imgArray` parameter is a 2-dimensional list or array containing the images
+		that you want to stack. Each element in the list represents a row of images, and each element
+		within the row represents an individual image
+		:param scale: The scale parameter is used to resize the images in the imgArray. It determines the
+		scaling factor by which the images will be resized
+		:param lables: The `lables` parameter is a list of labels for each image in the `imgArray`. These
+		labels will be displayed on top of each image in the stacked output
+		:return: the stacked image, which is stored in the variable "ver".
+		"""
 		rows = len(imgArray)
 		cols = len(imgArray[0])
 		rowsAvailable = isinstance(imgArray[0], list)
@@ -69,7 +83,7 @@ class Ar:
 
 		# test our taking input is properly import in program
 		global img2WithPoly
-		sucesss, imgVideo = self.myVid.read()
+		_, imgVideo = self.myVid.read()
 
 		# frame counter for counting frame rates
 		frameCount = 0
@@ -79,20 +93,24 @@ class Ar:
 			its consistent overlay on traget if both frames have same size'''
 		hT, wT, cT = self.imgTarget.shape
 		imgVideo = cv2.resize(imgVideo, (wT, hT))
-		imgTarget = cv2.resize(self.imgTarget, (wT, hT))
 
 		# main detector for finding features of target image in mainFrame video
 		orb = cv2.ORB_create(nfeatures=2000) # image matching  detector
 		kp1, des1 = orb.detectAndCompute(self.imgTarget, None)
 		self.imgTarget = cv2.drawKeypoints(self.imgTarget, kp1, None)
 
+		# Initialize imgStack outside the while loop
+		imgStack = None
+		imgWrap = None  # Initialize imgWrap outside the while loop
 		# for showing video use loop to capture frames
 		while self.cap.isOpened():
 			sucesss, imgCap = self.cap.read()
-			imgAugment = imgCap.copy()
-			# declaration of final outPut image which will be augumented
+			
+			# declaration of final outPut image which will be augmented
 			imgCap = cv2.resize(imgCap, (wT+200, hT+200))
-
+			imgAugment = imgCap.copy()
+			imgWrap = imgCap.copy()
+   
 			if self.detection == False:
 				# we not detect anything
 				#so initialize video to 0
@@ -108,25 +126,36 @@ class Ar:
 
 				sucesss, imgVideo = self.myVid.read()
 				imgVideo = cv2.resize(imgVideo, (wT, hT))
-				imgTarget = cv2.resize(self.imgTarget, (wT, hT))
+				# imgTarget = cv2.resize(self.imgTarget, (wT, hT))
 
-			imgAugment = imgCap.copy()
 			# testing this algorithm on our MainVideo frame for working properly or not
 			kp2, des2 = orb.detectAndCompute(imgCap, None)
-			#imgCap = cv2.drawKeypoints(imgCap, kp2, None)
-
-			# create brute fore matcher algorithm for matching keyPoints using descriptor
-			bf = cv2.BFMatcher()
-			matches = bf.knnMatch(des1, des2, k=2)
+			imgCap = cv2.drawKeypoints(imgCap, kp2, None)
 			good = []
-			for m, n in matches:
-
-				if m.distance < 0.75 * n.distance:
-					good.append(m)
-			print("key points are find out ",len(good))  # print out how many keyPoints are matches
-
+   # Check if descriptors are valid before matching
+			if des1 is not None and des2 is not None and des1.dtype == des2.dtype and des1.shape[1] == des2.shape[1]:
+				# create brute force matcher algorithm for matching keyPoints using descriptor
+				bf = cv2.BFMatcher()
+				matches = bf.knnMatch(des1, des2, k=2)
+				if matches:
+					for m, n in matches:
+						if m.distance < 0.75 * n.distance:
+							good.append(m)
+					print("key points are find out ", len(good))  # print out how many keyPoints are matches
+				# rest of the code remains unchanged
+				# ...
+			else:
+				print("Error: Invalid descriptors")
+				
 			# draw good matches on images
-			imgFeatures = cv2.drawMatches(self.imgTarget, kp1, imgCap, kp2, good,None, flags=2 )
+			imgFeatures = cv2.drawMatches(self.imgTarget, kp1, imgCap, kp2, good, None, flags=2)
+
+			# Check if the indices are within the valid range
+			for m in good:
+				if m.trainIdx >= len(kp2) or m.queryIdx >= len(kp1):
+					print("Invalid key point indices detected")
+					break
+
 			imgFeatures = cv2.resize(imgFeatures, (wT+200, hT+200))
 
 			#  if features are greater than 20 so we can call that we find out target images on Main Frame
@@ -141,43 +170,42 @@ class Ar:
 
 				# FIND OUT bounding box using perspective transform and Poly lines to draw lines
 				pts = np.float32([[0, 0], [0, hT], [wT, hT], [wT, 0]]).reshape(-1, 1, 2)
-				dst = cv2.perspectiveTransform(pts, matrix)
+				# Check if the number of channels is correct (3 channels)
+				#if pts.shape[1] == 2 and pts.shape[2] == 2:
+				# Check if the number of channels is correct (3 channels)
+				if pts.shape[2] == 2:
+					dst = cv2.perspectiveTransform(pts, matrix)
+		
+					# draw poly lines on main frame image
+					img2WithPoly = cv2.polylines(imgCap, [np.int32(dst)], True, (255,0,255), 2)
 
-				# draw poly lines on main frame image
-				img2WithPoly = cv2.polylines(imgCap, [np.int32(dst)], True, (255,0,255), 2)
+					# find out the warp perspective of an  image
+					imgWrap = cv2.warpPerspective(imgVideo, matrix, (imgCap.shape[1], imgCap.shape[0]))
 
-				# find out the warp perspective of an  image
-				imgWrap = cv2.warpPerspective(imgVideo, matrix, (imgCap.shape[1], imgCap.shape[0]))
+					# Masking of mainFrame image for putting proper video that help
+					maskNew = np.zeros([imgCap.shape[0], imgCap.shape[1]], dtype=np.uint8)
+					# now we have to color area where we find image as white actually this will mask
+					cv2.fillPoly(maskNew, [np.int32(dst)], (255, 255, 255))
 
-				# Masking of mainFrame image for putting proper video that help
-				maskNew = np.zeros([imgCap.shape[0], imgCap.shape[1]], dtype=np.uint8)
-				# now we have to color area where we find image as white actually this will mask
-				cv2.fillPoly(maskNew, [np.int32(dst)], (255, 255, 255))
+					# now we inverse image for get color region of mainFrame image
+					maskInv = cv2.bitwise_not(maskNew)
+					imgAugment = cv2.bitwise_and(src1=imgAugment, src2=imgAugment, mask=maskInv)
 
-				# now we inverse image for get color region of mainFrame image
-				maskInv = cv2.bitwise_not(maskNew)
-				imgAugment = cv2.bitwise_and(src1=imgAugment, src2=imgAugment, mask=maskInv)
+					# we overlay warpImage[putVideo] on mainFrame
+					imgAugment = cv2.bitwise_or(imgWrap, imgAugment)
 
-				# we overlay warpImage[putVideo] on mainFrame
-				imgAugment = cv2.bitwise_or(imgWrap, imgAugment)
+					# using my manually created image stacking function for showing images in a proper format
+					imgList = ([imgVideo, self.imgTarget, imgCap], [imgFeatures,imgWrap, imgAugment])
+					imgStack = self.StackImages(imgList, scale=0.5)
+			# show our taking images of web cam input as image frames
 
-				# using my manually created image stacking function for showing images in a proper format
-				imgList = ([imgVideo, imgTarget, imgCap], [imgFeatures,imgWrap, imgAugment])
-				imgStack = self.StackImages(imgList, scale=0.5)
-			# show our taking imges of video
-
-			'''cv2.imshow("Main Frame", imgCap)
-			cv2.imshow("ImgTarget", self.imgTarget)
-			cv2.imshow("ImgVideo", imgVideo)
-			cv2.imshow("image Features", imgFeatures)   # if you want to show complete pipeline of program just uncomment  triple quotes
-			cv2.imshow("Poly Line image", img2WithPoly)
-			cv2.imshow("Image Wraper", imgWrap)
-			cv2.imshow("Image Masking", maskNew)
-			cv2.imshow("Image Masking inverse", maskInv)
-			cv2.imshow("image Augument", imgAugment) '''
-
-			# main output
-			cv2.imshow("ImageStacked", imgStack)
+			# Update imgStack here, whether or not the condition is met
+			imgList = ([imgVideo, self.imgTarget, imgCap], [imgFeatures, imgWrap, imgAugment])
+			imgStack = self.StackImages(imgList, scale=0.5)
+			
+   			#	Output 
+			cv2.imshow("Augmentation", imgStack)
+			
 			frameCount += 1
 
 			if cv2.waitKey(1) & 0xFF == ord("q"):  # for quit the session Press 'q'
@@ -185,5 +213,5 @@ class Ar:
 
 
 if __name__ == '__main__':
-	AR1 = Ar(capturePath=r"DataSet//MainVideo.mp4", putVideo=r"DataSet//PexelsVideos.mp4", targetImagePath=r"DataSet//targetImg.png")
+	AR1 = Ar(capturePath=1, putVideo=r"DataSet\OverlayVideo.mp4", targetImagePath=r"DataSet//tragetImage.jpg")
 	AR1.computeAr()
